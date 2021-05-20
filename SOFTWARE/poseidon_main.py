@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+import cherrypy
 import serial
 import time
 import glob
@@ -1474,15 +1474,39 @@ class MainWindow(QtWidgets.QMainWindow, poseidon_controller_gui.Ui_MainWindow):
 			pass
 		sys.exit()
 
+class PoseidonWebService(object):
+    @cherrypy.expose
+    @cherrypy.tools.json_out()
+    @cherrypy.tools.json_in()
+    def index(self):
+        # data = cherrypy.request.json
+        for i in range(10):
+            with serial.Serial('/dev/cu.usbmodem1462401', 9800, timeout=1) as ser:
+                time.sleep(0.5)
+                ser.write(b'H')  # send the pyte string 'H'
+                time.sleep(0.5)  # wait 0.5 seconds
+                ser.write(b'L')  # send the byte string 'L'
+        return '{"success": "true"}'
+
+
+
 # I feel better having one of these
 def main():
-	# a new app instance
-	app = QtWidgets.QApplication(sys.argv)
-	window = MainWindow()
-	window.setWindowTitle("Poseidon Pumps Controller - Pachter Lab Caltech 2018")
-	window.show()
-	# without this, the script exits immediately.
-	sys.exit(app.exec_())
+    # a new app instance
+    # app = QtWidgets.QApplication(sys.argv)
+    # window = MainWindow()
+    # window.setWindowTitle("Cell Curator v0.1")
+    # window.show()
+    # # without this, the script exits immediately.
+    # sys.exit(app.exec_())
+
+    config = {
+        'server.socket_host': '127.0.0.1',
+        'server.socket_port': 9090
+    }
+
+    cherrypy.config.update(config)
+    cherrypy.quickstart(PoseidonWebService())
 
 if __name__ == "__main__":
-	main()
+    main()
